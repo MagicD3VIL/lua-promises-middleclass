@@ -1,12 +1,10 @@
 # lua-promises
 
-[![Build Status](https://travis-ci.org/zserge/lua-promises.svg)](https://travis-ci.org/zserge/lua-promises)
-
-[A+ promises](https://promisesaplus.com/) in Lua
+[A+ promises](https://promisesaplus.com/) in Lua rewritten to [middleclass](https://github.com/kikito/middleclass).
 
 ## Why would I need promises?
 
-Lua is normally single-threaded, so there is little need in asyncrhonous
+Lua is normally single-threaded, so there is little need in asynchronous
 operations. However, if you use HTTP requests, or sockets, or other types of
 I/O - most likely your library would have asynchronous API:
 	
@@ -60,30 +58,29 @@ rejected. Various callbacks could be added to the object to get notified when
 the object is resolved. Such objects are called promises, deferred objects,
 thennables - all these names describe pretty much the same behavior.
 
+## Requirements
+
+* [middleclass](https://github.com/kikito/middleclass)
+
 ## Install
 
-In terminal:
+Download the `deferred.lua` from this repository.
 
-``` bash
-luarocks install --server=http://luarocks.org/dev lua-promises
-```
-
-In Lua code:
-
+Then in Lua code:
 ``` lua
-local deferred = require('deferred')
+local Deferred = require('deferred')
 ```
 
 ## API
 
 Create new promises:
 
-* `d = deferred.new()` - returns a new promise object `d`
-* `d = deferred.all(promises)` - returns a new promise object `d` that is
+* `d = Deferred:new()` - returns a new promise object `d`
+* `d = Deferred:all(promises)` - returns a new promise object `d` that is
 	resolved when all `promises` are resolved/rejected.
-* `d = deferred.first(promises)` - returns a new promise object `d` that is
+* `d = Deferred:first(promises)` - returns a new promise object `d` that is
 	resolved as soon as the first of the `promises` gets resolved/rejected.
-* `d = deferred.map(list, fn)` - returns a new promise object `d` that is
+* `d = Deferred:map(list, fn)` - returns a new promise object `d` that is
 	resolved with the values of sequential application of function `fn` to each
 	element in the `list`. `fn` is expected to return promise object.
 
@@ -100,7 +97,7 @@ Wait for the promise object:
 ## Example
 
 ``` lua
-local deferred = require('deferred')
+local Deferred = require('deferred')
 
 --
 -- Converting callback-based API into promise-based is very straightforward:
@@ -115,7 +112,7 @@ local deferred = require('deferred')
 --    your asynchronous function
 
 function read(f)
-	local d = deferred.new()
+	local d = Deferred:new()
 	readasync(f, function(contents, err)
 		if err == nil then
 			d:resolve(contents)
@@ -162,7 +159,7 @@ action is started only when the previous one is successfully completed:
 ``` lua
 local items = {'a.txt', 'b.txt', 'c.txt'}
 -- Read 3 files, one by one
-deferred.map(items, read):next(function(files)
+Deferred:map(items, read):next(function(files)
 	-- here files is an array of file contents for each of the files
 end, function(err)
 	-- handle reading error
@@ -175,7 +172,7 @@ You may start multiple asynchronous actions in parallel and wait for all of
 them to complete:
 
 ``` lua
-deferred.all({
+Deferred:all({
 	http.get('http://example.com/first'),
 	http.get('http://example.com/second'),
 	http.get('http://example.com/third'),
@@ -196,14 +193,14 @@ In some cases it's handy to wait for either of the promises. A good example is r
 
 -- returns a promise that gets rejected after a certain timeout
 function timeout(sec)
-	local d = deferred.new()
+	local d = Deferred:new()
 	settimeout(function()
 		d:reject('Timeout')
 	end, sec)
 	return d
 end
 
-deferred.first({
+Deferred:first({
 	read(somefile), -- resolves promise with contents, or rejects with error
 	timeout(5),
 }):next(function(result)
